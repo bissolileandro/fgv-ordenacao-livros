@@ -1,3 +1,4 @@
+using AutoMapper;
 using fgv.ordenacao.livros.application.Contracts.Requests;
 using fgv.ordenacao.livros.application.Services;
 using fgv.ordenacao.livros.domain.Exceptions;
@@ -143,9 +144,16 @@ public sealed class BookOrderingTests
             ]
         });
 
-        var criteriaProvider = new ConfigurationOrderCriteriaProvider(orderSettings);
+        var mapperConfiguration = new MapperConfiguration(configuration =>
+        {
+            configuration.AddMaps(typeof(BookOrderingApplicationService).Assembly);
+            configuration.AddMaps(typeof(ConfigurationOrderCriteriaProvider).Assembly);
+        });
+
+        var mapper = mapperConfiguration.CreateMapper();
+        var criteriaProvider = new ConfigurationOrderCriteriaProvider(orderSettings, mapper);
         var factory = new BooksOrdererFactory();
-        return new BookOrderingApplicationService(criteriaProvider, factory);
+        return new BookOrderingApplicationService(criteriaProvider, factory, mapper);
     }
 
     private static List<BookRequest> GetBooks()

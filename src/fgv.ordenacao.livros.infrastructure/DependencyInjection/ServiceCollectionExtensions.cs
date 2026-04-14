@@ -1,3 +1,4 @@
+using AutoMapper;
 using fgv.ordenacao.livros.application.Interfaces;
 using fgv.ordenacao.livros.application.Services;
 using fgv.ordenacao.livros.infrastructure.Configuration;
@@ -12,6 +13,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddBookOrdering(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<OrderSettings>(configuration.GetSection(OrderSettings.SectionName));
+        services.AddAutoMapper(typeof(BookOrderingApplicationService).Assembly, typeof(ConfigurationOrderCriteriaProvider).Assembly);
         services.AddScoped<IBookOrderingApplicationService, BookOrderingApplicationService>();
         services.AddScoped<IOrderCriteriaProvider, ConfigurationOrderCriteriaProvider>();
         services.AddScoped<IBooksOrdererFactory, BooksOrdererFactory>();

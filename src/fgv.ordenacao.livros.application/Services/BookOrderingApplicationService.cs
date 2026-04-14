@@ -1,4 +1,4 @@
-using fgv.ordenacao.livros.application.Common;
+using AutoMapper;
 using fgv.ordenacao.livros.application.Contracts.Requests;
 using fgv.ordenacao.livros.application.Contracts.Responses;
 using fgv.ordenacao.livros.application.Interfaces;
@@ -12,11 +12,13 @@ public sealed class BookOrderingApplicationService : IBookOrderingApplicationSer
 {
     private readonly IOrderCriteriaProvider _orderCriteriaProvider;
     private readonly IBooksOrdererFactory _booksOrdererFactory;
+    private readonly IMapper _mapper;
 
-    public BookOrderingApplicationService(IOrderCriteriaProvider orderCriteriaProvider, IBooksOrdererFactory booksOrdererFactory)
+    public BookOrderingApplicationService(IOrderCriteriaProvider orderCriteriaProvider, IBooksOrdererFactory booksOrdererFactory, IMapper mapper)
     {
         _orderCriteriaProvider = orderCriteriaProvider;
         _booksOrdererFactory = booksOrdererFactory;
+        _mapper = mapper;
     }
 
     public OrderBooksResponse Order(OrderBooksRequest request)
@@ -32,29 +34,22 @@ public sealed class BookOrderingApplicationService : IBookOrderingApplicationSer
             ? ParseCriteria(request.Criteria)
             : _orderCriteriaProvider.GetDefaultCriteria();
 
-        var books = request.Books.Select(book => new Book(book.Title, book.AuthorName, book.EditionYear)).ToArray();
+        var books = _mapper.Map<IReadOnlyCollection<Book>>(request.Books);
         var orderer = _booksOrdererFactory.Create(criteria);
         var orderedBooks = orderer.Order(books);
 
         return new OrderBooksResponse
         {
-            Books = orderedBooks.Select(book => new BookResponse
-            {
-                Title = book.Title,
-                AuthorName = book.AuthorName,
-                EditionYear = book.EditionYear
-            }).ToArray(),
-            AppliedCriteria = criteria.Select(SortCriterionMapper.Format).ToArray()
+            Books = _mapper.Map<IReadOnlyCollection<BookResponse>>(orderedBooks),
+            AppliedCriteria = _mapper.Map<IReadOnlyCollection<string>>(criteria)
         };
     }
 
-    private static IReadOnlyCollection<SortCriterion> ParseCriteria(IEnumerable<SortCriterionRequest> criteria)
+    private IReadOnlyCollection<SortCriterion> ParseCriteria(IEnumerable<SortCriterionRequest> criteria)
     {
-        var parsedCriteria = criteria.Select(criterion => new SortCriterion(
-            SortCriterionMapper.ParseField(criterion.Field, "Campo de ordenação inválido"),
-            SortCriterionMapper.ParseDirection(criterion.Direction, "Direção de ordenação inválida"))).ToArray();
+        var parsedCriteria = _mapper.Map<IReadOnlyCollection<SortCriterion>>(criteria);
 
-        if (parsedCriteria.Length == 0)
+        if (parsedCriteria.Count == 0)
         {
             throw new OrdenacaoException("Ao menos um critério de ordenação deve ser informado.");
         }
